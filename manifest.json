@@ -1,0 +1,17 @@
+{
+  "name": "Sudoku Premium",
+  "short_name": "Sudoku",
+  "description": "Elegant and immersive iOS-style Sudoku game.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0c",
+  "theme_color": "#0a0a0c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
