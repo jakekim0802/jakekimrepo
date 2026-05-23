@@ -361,6 +361,29 @@ body {
 .btn-difficulty[data-difficulty="hard"] .diff-title { color: #f59e0b; }
 .btn-difficulty[data-difficulty="expert"] .diff-title { color: #ef4444; }
 
+/* Premium WPF Masterclass Button styling */
+.btn-wpf {
+  width: 100%;
+  margin-top: 12px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.09), rgba(168, 85, 247, 0.06));
+  border: 1.5px solid rgba(251, 191, 36, 0.4);
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.05);
+}
+
+.btn-wpf .diff-title {
+  color: #fbbf24;
+  background: linear-gradient(135deg, #fbbf24 30%, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.btn-wpf:active {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(168, 85, 247, 0.12));
+  border-color: #fbbf24;
+  transform: scale(0.98);
+}
+
+
 /* Welcome Footer Buttons */
 .welcome-footer {
   width: 100%;

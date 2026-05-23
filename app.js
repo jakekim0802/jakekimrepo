@@ -281,6 +281,270 @@ const SudokuEngine = {
       initialBoard: puzzle.map(row => [...row]),
       currentBoard: puzzle.map(row => [...row])
     };
+  },
+
+  // Generates a world-class WPF difficulty puzzle using advanced logical techniques filtering
+  generateWPFPuzzle() {
+    let attempts = 0;
+    while (attempts < 15) {
+      const solution = this.generateSolvedBoard();
+      const puzzle = solution.map(row => [...row]);
+      
+      const cells = [];
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          cells.push({ r, c });
+        }
+      }
+      cells.sort(() => Math.random() - 0.5);
+
+      let cluesCount = 81;
+      for (const cell of cells) {
+        if (cluesCount <= 26) break; // Targets standard WPF clue counts (23-26)
+        
+        const valBackup = puzzle[cell.r][cell.c];
+        puzzle[cell.r][cell.c] = 0;
+        
+        const state = { count: 0 };
+        const tempBoard = puzzle.map(row => [...row]);
+        this.countSolutions(tempBoard, state);
+        
+        if (state.count === 1) {
+          cluesCount--;
+        } else {
+          puzzle[cell.r][cell.c] = valBackup;
+        }
+      }
+
+      // Perform human logical analysis on the generated unique puzzle
+      const analysis = this.analyzeLogicalPuzzle(puzzle);
+      if (analysis.solvable && (analysis.hasPointing || analysis.hasNakedPairs)) {
+        // Found a perfect board that requires elegant logical reasoning (Pointing / Naked Pairs)!
+        return {
+          solutionBoard: solution,
+          initialBoard: puzzle.map(row => [...row]),
+          currentBoard: puzzle.map(row => [...row]),
+          isWPF: true
+        };
+      }
+      attempts++;
+    }
+    
+    // Fallback: If 15 attempts didn't yield a perfect pointing puzzle, return a very tight hard puzzle
+    return this.generatePuzzle('hard');
+  },
+
+  // Simulates pure human logic deduction (No guessing/backtracking) to rate difficulty
+  analyzeLogicalPuzzle(board) {
+    const b = board.map(row => [...row]);
+    
+    // Initialize candidates
+    const candidates = Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => null));
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (b[r][c] === 0) {
+          candidates[r][c] = new Set();
+          for (let val = 1; val <= 9; val++) {
+            if (this.isValid(b, r, c, val)) {
+              candidates[r][c].add(val);
+            }
+          }
+        }
+      }
+    }
+
+    let hasPointing = false;
+    let hasNakedPairs = false;
+    let progress = true;
+
+    while (progress) {
+      progress = false;
+
+      // 1. Naked Singles
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (b[r][c] === 0 && candidates[r][c].size === 1) {
+            const val = Array.from(candidates[r][c])[0];
+            b[r][c] = val;
+            candidates[r][c] = null;
+            this.updateLogicalCandidates(b, candidates, r, c, val);
+            progress = true;
+            break;
+          }
+        }
+        if (progress) break;
+      }
+      if (progress) continue;
+
+      // 2. Hidden Singles
+      // Rows
+      for (let r = 0; r < 9; r++) {
+        for (let val = 1; val <= 9; val++) {
+          let count = 0;
+          let colIdx = -1;
+          for (let c = 0; c < 9; c++) {
+            if (b[r][c] === 0 && candidates[r][c].has(val)) {
+              count++;
+              colIdx = c;
+            }
+          }
+          if (count === 1) {
+            b[r][colIdx] = val;
+            candidates[r][colIdx] = null;
+            this.updateLogicalCandidates(b, candidates, r, colIdx, val);
+            progress = true;
+            break;
+          }
+        }
+        if (progress) break;
+      }
+      if (progress) continue;
+
+      // Columns
+      for (let c = 0; c < 9; c++) {
+        for (let val = 1; val <= 9; val++) {
+          let count = 0;
+          let rowIdx = -1;
+          for (let r = 0; r < 9; r++) {
+            if (b[r][c] === 0 && candidates[r][c].has(val)) {
+              count++;
+              rowIdx = r;
+            }
+          }
+          if (count === 1) {
+            b[rowIdx][c] = val;
+            candidates[rowIdx][c] = null;
+            this.updateLogicalCandidates(b, candidates, rowIdx, c, val);
+            progress = true;
+            break;
+          }
+        }
+        if (progress) break;
+      }
+      if (progress) continue;
+
+      // Blocks
+      for (let bIdx = 0; bIdx < 9; bIdx++) {
+        const brStart = 3 * Math.floor(bIdx / 3);
+        const bcStart = 3 * (bIdx % 3);
+        for (let val = 1; val <= 9; val++) {
+          let count = 0;
+          let targetR = -1;
+          let targetC = -1;
+          for (let i = 0; i < 9; i++) {
+            const r = brStart + Math.floor(i / 3);
+            const c = bcStart + (i % 3);
+            if (b[r][c] === 0 && candidates[r][c].has(val)) {
+              count++;
+              targetR = r;
+              targetC = c;
+            }
+          }
+          if (count === 1) {
+            b[targetR][targetC] = val;
+            candidates[targetR][targetC] = null;
+            this.updateLogicalCandidates(b, candidates, targetR, targetC, val);
+            progress = true;
+            break;
+          }
+        }
+        if (progress) break;
+      }
+      if (progress) continue;
+
+      // 3. Pointing Pairs / Triples (Medium-High logic)
+      for (let bIdx = 0; bIdx < 9; bIdx++) {
+        const brStart = 3 * Math.floor(bIdx / 3);
+        const bcStart = 3 * (bIdx % 3);
+        for (let val = 1; val <= 9; val++) {
+          let rowIndices = new Set();
+          let colIndices = new Set();
+          for (let i = 0; i < 9; i++) {
+            const r = brStart + Math.floor(i / 3);
+            const c = bcStart + (i % 3);
+            if (b[r][c] === 0 && candidates[r][c].has(val)) {
+              rowIndices.add(r);
+              colIndices.add(c);
+            }
+          }
+          // Pointing Row
+          if (rowIndices.size === 1) {
+            const r = Array.from(rowIndices)[0];
+            for (let c = 0; c < 9; c++) {
+              if (Math.floor(c / 3) !== bIdx % 3 && b[r][c] === 0 && candidates[r][c].has(val)) {
+                candidates[r][c].delete(val);
+                hasPointing = true;
+                progress = true;
+              }
+            }
+          }
+          // Pointing Col
+          if (colIndices.size === 1) {
+            const c = Array.from(colIndices)[0];
+            for (let r = 0; r < 9; r++) {
+              if (Math.floor(r / 3) !== Math.floor(bIdx / 3) && b[r][c] === 0 && candidates[r][c].has(val)) {
+                candidates[r][c].delete(val);
+                hasPointing = true;
+                progress = true;
+              }
+            }
+          }
+        }
+      }
+      if (progress) continue;
+
+      // 4. Naked Pairs (High logic)
+      for (let r = 0; r < 9; r++) {
+        const pairs = [];
+        for (let c = 0; c < 9; c++) {
+          if (b[r][c] === 0 && candidates[r][c].size === 2) {
+            pairs.push({ c, cands: Array.from(candidates[r][c]) });
+          }
+        }
+        for (let i = 0; i < pairs.length; i++) {
+          for (let j = i + 1; j < pairs.length; j++) {
+            if (pairs[i].cands[0] === pairs[j].cands[0] && pairs[i].cands[1] === pairs[j].cands[1]) {
+              const val1 = pairs[i].cands[0];
+              const val2 = pairs[i].cands[1];
+              for (let c = 0; c < 9; c++) {
+                if (c !== pairs[i].c && c !== pairs[j].c && b[r][c] === 0) {
+                  if (candidates[r][c].has(val1) || candidates[r][c].has(val2)) {
+                    candidates[r][c].delete(val1);
+                    candidates[r][c].delete(val2);
+                    hasNakedPairs = true;
+                    progress = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      if (progress) continue;
+    }
+
+    let solved = true;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (b[r][c] === 0) solved = false;
+      }
+    }
+
+    return {
+      solvable: solved,
+      hasPointing,
+      hasNakedPairs
+    };
+  },
+
+  updateLogicalCandidates(board, candidates, row, col, val) {
+    for (let i = 0; i < 9; i++) {
+      if (candidates[row][i]) candidates[row][i].delete(val);
+      if (candidates[i][col]) candidates[i][col].delete(val);
+      const br = 3 * Math.floor(row / 3) + Math.floor(i / 3);
+      const bc = 3 * Math.floor(col / 3) + (i % 3);
+      if (candidates[br][bc]) candidates[br][bc].delete(val);
+    }
   }
 };
 
@@ -296,11 +560,16 @@ const StatsManager = {
         easy: { played: 0, won: 0, bestTime: null, streak: 0, maxStreak: 0 },
         medium: { played: 0, won: 0, bestTime: null, streak: 0, maxStreak: 0 },
         hard: { played: 0, won: 0, bestTime: null, streak: 0, maxStreak: 0 },
-        expert: { played: 0, won: 0, bestTime: null, streak: 0, maxStreak: 0 }
+        expert: { played: 0, won: 0, bestTime: null, streak: 0, maxStreak: 0 },
+        wpf: { played: 0, won: 0, bestTime: null, streak: 0, maxStreak: 0 }
       };
       localStorage.setItem('sudoku_stats', JSON.stringify(stats));
     } else {
       stats = JSON.parse(stats);
+      if (!stats.wpf) {
+        stats.wpf = { played: 0, won: 0, bestTime: null, streak: 0, maxStreak: 0 };
+        localStorage.setItem('sudoku_stats', JSON.stringify(stats));
+      }
     }
     return stats;
   },
@@ -701,7 +970,7 @@ const App = {
 
     // Trigger Sudoku generation in micro-task to avoid paint lag
     setTimeout(() => {
-      const puzzle = SudokuEngine.generatePuzzle(difficulty);
+      const puzzle = (difficulty === 'wpf') ? SudokuEngine.generateWPFPuzzle() : SudokuEngine.generatePuzzle(difficulty);
       this.solutionBoard = puzzle.solutionBoard;
       this.initialBoard = puzzle.initialBoard;
       this.currentBoard = puzzle.currentBoard;
@@ -1116,6 +1385,7 @@ const App = {
       case 'medium': return '보통';
       case 'hard': return '어려움';
       case 'expert': return '전문가';
+      case 'wpf': return '🏆 WPF';
       default: return '쉬움';
     }
   },
