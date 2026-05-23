@@ -415,6 +415,188 @@ body {
 }
 
 /* ==========================================================================
+   RESPONSIVE SCALING FOR SHORTER VIEWPORTS (iPhone 13 Pro, iPhone SE, etc.)
+   ========================================================================== */
+
+/* Shorter devices (e.g. iPhone 12/13/14/15/16 Pro standard - height <= 860px) */
+@media (max-height: 860px) {
+  #welcome-screen {
+    padding-top: calc(var(--safe-top) + 10px);
+    padding-bottom: calc(var(--safe-bottom) + 10px);
+  }
+  
+  .app-logo {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 12px;
+    padding: 8px;
+    border-radius: 20px;
+  }
+  
+  .logo-grid .logo-center {
+    font-size: 20px;
+  }
+  
+  .app-title {
+    font-size: 26px;
+    margin-bottom: 2px;
+  }
+  
+  .app-subtitle {
+    font-size: 13px;
+    letter-spacing: 1.5px;
+  }
+  
+  .welcome-actions {
+    gap: 12px;
+  }
+  
+  .btn-resume-card {
+    padding: 12px 16px;
+    border-radius: 16px;
+  }
+  
+  .resume-lbl {
+    font-size: 13px;
+  }
+  
+  .resume-desc {
+    font-size: 11px;
+  }
+  
+  .difficulty-selector {
+    gap: 8px;
+  }
+  
+  .difficulty-selector h2 {
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+  
+  .difficulty-grid {
+    gap: 8px;
+  }
+  
+  .btn-difficulty {
+    padding: 12px;
+    border-radius: 14px;
+  }
+  
+  .diff-title {
+    font-size: 15px;
+  }
+  
+  .diff-desc {
+    font-size: 11px;
+  }
+  
+  .btn-wpf {
+    margin-top: 8px;
+  }
+  
+  .welcome-footer {
+    padding-top: 10px;
+  }
+  
+  .btn-footer {
+    padding: 6px 12px;
+    font-size: 12px;
+    gap: 4px;
+  }
+}
+
+/* Very short devices (e.g. iPhone SE, height <= 740px) */
+@media (max-height: 740px) {
+  #welcome-screen {
+    padding-top: calc(var(--safe-top) + 5px);
+    padding-bottom: calc(var(--safe-bottom) + 5px);
+  }
+  
+  .app-logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 8px;
+    padding: 6px;
+    border-radius: 16px;
+  }
+  
+  .logo-grid {
+    gap: 4px;
+  }
+  
+  .logo-grid .logo-center {
+    font-size: 16px;
+  }
+  
+  .app-title {
+    font-size: 22px;
+    margin-bottom: 0px;
+  }
+  
+  .app-subtitle {
+    display: none; /* Hide subtitle to reclaim space */
+  }
+  
+  .welcome-actions {
+    gap: 8px;
+  }
+  
+  .btn-resume-card {
+    padding: 10px 14px;
+    border-radius: 12px;
+  }
+  
+  .resume-lbl {
+    font-size: 12px;
+  }
+  
+  .resume-desc {
+    font-size: 10px;
+  }
+  
+  .difficulty-selector {
+    gap: 6px;
+  }
+  
+  .difficulty-selector h2 {
+    font-size: 12px;
+    margin-bottom: 0;
+  }
+  
+  .difficulty-grid {
+    gap: 6px;
+  }
+  
+  .btn-difficulty {
+    padding: 10px;
+    border-radius: 10px;
+  }
+  
+  .diff-title {
+    font-size: 14px;
+  }
+  
+  .diff-desc {
+    font-size: 10px;
+  }
+  
+  .btn-wpf {
+    margin-top: 6px;
+  }
+  
+  .welcome-footer {
+    padding-top: 6px;
+  }
+  
+  .btn-footer {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 2px;
+  }
+}
+
+
+/* ==========================================================================
    2. GAME PLAY SCREEN STYLES
    ========================================================================== */
 
