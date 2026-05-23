@@ -64,6 +64,19 @@
           </div>
         </button>
 
+        <!-- Hall of Fame Card -->
+        <button id="btn-show-hall" class="btn-resume-card btn-hall-card">
+          <div class="resume-info">
+            <span class="resume-lbl text-gold">🏆 명예의 전당 (Hall of Fame)</span>
+            <div class="resume-meta">
+              <span class="resume-desc">난이도별 역대 최단 기록 Top 10을 도전해보세요</span>
+            </div>
+          </div>
+          <div class="resume-arrow text-gold">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </button>
+
         <div class="difficulty-selector">
           <h2>새 게임 시작</h2>
           <div class="difficulty-grid">
@@ -129,6 +142,12 @@
             <button id="btn-pause-timer" class="btn-pause-inline" aria-label="게임 일시정지">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
             </button>
+          </div>
+          <!-- In-game top 3 records display! -->
+          <div id="in-game-records" class="in-game-records-container">
+            <span class="record-pacer-item gold">🥇 <span class="pacer-time">--:--</span></span>
+            <span class="record-pacer-item silver">🥈 <span class="pacer-time">--:--</span></span>
+            <span class="record-pacer-item bronze">🥉 <span class="pacer-time">--:--</span></span>
           </div>
         </div>
 
@@ -274,6 +293,16 @@
         <div id="victory-best-container" class="hidden-best">
           <span class="preview-lbl text-success">🏆 최고 기록 경신!</span>
           <span class="preview-val text-success">새 기록</span>
+        </div>
+      </div>
+
+      <!-- Hall of Fame Entry section inside Victory Dialog -->
+      <div id="hall-entry-section" class="hall-entry-section hidden">
+        <h3 class="hall-entry-title">🎖️ 명예의 전당 입성!</h3>
+        <p class="hall-entry-desc">Top 10에 기록되었습니다. 이름을 남기세요!</p>
+        <div class="hall-entry-form">
+          <input type="text" id="player-name-input" class="hall-name-input" placeholder="이름 (최대 8자)" maxlength="8">
+          <button id="btn-save-record" class="btn-save-record">기록 등록</button>
         </div>
       </div>
 
@@ -456,6 +485,62 @@
 
       <div class="dialog-actions-settings">
         <button id="btn-reset-theme" class="btn-danger-outline">테마 색상 초기화</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 7. HALL OF FAME DIALOG -->
+  <dialog id="hall-dialog" class="custom-dialog-large">
+    <div class="dialog-content">
+      <div class="dialog-large-header">
+        <h2>🏆 명예의 전당</h2>
+        <button id="btn-close-hall" class="btn-close-x" aria-label="명예의 전당 닫기">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="stats-tabs hall-tabs">
+        <button class="tab-btn active" data-hall-tab="easy">쉬움</button>
+        <button class="tab-btn" data-hall-tab="medium">보통</button>
+        <button class="tab-btn" data-hall-tab="hard">어려움</button>
+        <button class="tab-btn" data-hall-tab="expert">전문가</button>
+        <button class="tab-btn" data-hall-tab="wpf">WPF</button>
+      </div>
+
+      <div class="hall-content-container">
+        <!-- Olympic Podium (1st, 2nd, 3rd) -->
+        <div class="podium-wrapper">
+          <!-- 2nd Place (Silver) -->
+          <div class="podium-step step-2">
+            <div class="podium-medal silver">🥈</div>
+            <div class="podium-player-name" id="podium-2-name">빈 기록</div>
+            <div class="podium-player-time" id="podium-2-time">--:--</div>
+            <div class="podium-pedestal">2</div>
+          </div>
+          <!-- 1st Place (Gold) -->
+          <div class="podium-step step-1">
+            <div class="podium-medal gold">👑</div>
+            <div class="podium-player-name" id="podium-1-name">빈 기록</div>
+            <div class="podium-player-time" id="podium-1-time">--:--</div>
+            <div class="podium-pedestal">1</div>
+          </div>
+          <!-- 3rd Place (Bronze) -->
+          <div class="podium-step step-3">
+            <div class="podium-medal bronze">🥉</div>
+            <div class="podium-player-name" id="podium-3-name">빈 기록</div>
+            <div class="podium-player-time" id="podium-3-time">--:--</div>
+            <div class="podium-pedestal">3</div>
+          </div>
+        </div>
+
+        <!-- 4th to 10th Place Leaderboard List -->
+        <div class="hall-leaderboard-list" id="hall-list">
+          <!-- Dynamically populated rows -->
+        </div>
+      </div>
+
+      <div class="dialog-actions-stats">
+        <button id="btn-reset-hall" class="btn-danger-outline">명예의 전당 초기화</button>
       </div>
     </div>
   </dialog>

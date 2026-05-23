@@ -613,6 +613,87 @@ const StatsManager = {
 };
 
 // ==========================================================================
+// HALL OF FAME MANAGER
+// ==========================================================================
+
+const HallOfFame = {
+  getRecords() {
+    let records = localStorage.getItem('sudoku_hall_of_fame');
+    if (!records) {
+      records = {
+        easy: [],
+        medium: [],
+        hard: [],
+        expert: [],
+        wpf: []
+      };
+      localStorage.setItem('sudoku_hall_of_fame', JSON.stringify(records));
+    } else {
+      records = JSON.parse(records);
+      const diffs = ['easy', 'medium', 'hard', 'expert', 'wpf'];
+      let updated = false;
+      diffs.forEach(d => {
+        if (!records[d]) {
+          records[d] = [];
+          updated = true;
+        }
+      });
+      if (updated) {
+        localStorage.setItem('sudoku_hall_of_fame', JSON.stringify(records));
+      }
+    }
+    return records;
+  },
+
+  checkIsQualified(difficulty, seconds) {
+    const records = this.getRecords();
+    const diffRecords = records[difficulty] || [];
+    if (diffRecords.length < 10) {
+      return true;
+    }
+    return seconds < diffRecords[diffRecords.length - 1].seconds;
+  },
+
+  addRecord(difficulty, name, seconds) {
+    const records = this.getRecords();
+    if (!records[difficulty]) {
+      records[difficulty] = [];
+    }
+
+    const playerName = (name || '').trim().substring(0, 8) || 'Unknown';
+    localStorage.setItem('sudoku_last_player_name', playerName);
+
+    const now = new Date();
+    const yy = String(now.getFullYear()).substring(2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${yy}/${mm}/${dd}`;
+
+    const newEntry = {
+      name: playerName,
+      seconds: seconds,
+      date: dateStr
+    };
+
+    records[difficulty].push(newEntry);
+    records[difficulty].sort((a, b) => a.seconds - b.seconds);
+    records[difficulty] = records[difficulty].slice(0, 10);
+
+    localStorage.setItem('sudoku_hall_of_fame', JSON.stringify(records));
+    return records[difficulty];
+  },
+
+  reset() {
+    localStorage.removeItem('sudoku_hall_of_fame');
+    return this.getRecords();
+  },
+
+  getLastPlayerName() {
+    return localStorage.getItem('sudoku_last_player_name') || '';
+  }
+};
+
+// ==========================================================================
 // MAIN APP CONTROLLER
 // ==========================================================================
 
@@ -658,6 +739,7 @@ const App = {
     this.els.btnShowSettings = document.getElementById('btn-show-settings');
     this.els.btnToggleGlobalTheme = document.getElementById('btn-toggle-global-theme');
     this.els.themeLbl = document.getElementById('theme-lbl');
+    this.els.btnShowHall = document.getElementById('btn-show-hall');
     
     // Game Controls
     this.els.btnBack = document.getElementById('btn-back');
@@ -674,6 +756,7 @@ const App = {
     this.els.btnToggleSound = document.getElementById('btn-toggle-sound');
     this.els.btnToggleTheme = document.getElementById('btn-toggle-theme');
     this.els.btnShowGameSettings = document.getElementById('btn-show-game-settings');
+    this.els.inGameRecords = document.getElementById('in-game-records');
 
     // Dialogs
     this.els.pauseDialog = document.getElementById('pause-dialog');
@@ -682,6 +765,7 @@ const App = {
     this.els.statsDialog = document.getElementById('stats-dialog');
     this.els.helpDialog = document.getElementById('help-dialog');
     this.els.settingsDialog = document.getElementById('settings-dialog');
+    this.els.hallDialog = document.getElementById('hall-dialog');
     
     // Pause Dialog elements
     this.els.pauseDiffLbl = document.getElementById('pause-diff-lbl');
@@ -699,6 +783,9 @@ const App = {
     this.els.victoryBestContainer = document.getElementById('victory-best-container');
     this.els.btnVictoryNew = document.getElementById('btn-victory-new');
     this.els.btnVictoryQuit = document.getElementById('btn-victory-quit');
+    this.els.hallEntrySection = document.getElementById('hall-entry-section');
+    this.els.playerNameInput = document.getElementById('player-name-input');
+    this.els.btnSaveRecord = document.getElementById('btn-save-record');
     
     // Stats Dialog elements
     this.els.btnCloseStats = document.getElementById('btn-close-stats');
@@ -715,6 +802,11 @@ const App = {
     this.els.pickerCellBg = document.getElementById('picker-cell-bg');
     this.els.pickerOuterBorder = document.getElementById('picker-outer-border');
     this.els.pickerInnerBorder = document.getElementById('picker-inner-border');
+
+    // Hall Dialog elements
+    this.els.btnCloseHall = document.getElementById('btn-close-hall');
+    this.els.btnResetHall = document.getElementById('btn-reset-hall');
+    this.els.hallList = document.getElementById('hall-list');
   },
 
   bindEvents() {
@@ -900,6 +992,54 @@ const App = {
         }
       }
     });
+
+    // Hall of Fame Welcome Card click
+    this.els.btnShowHall.addEventListener('click', () => {
+      this.openHall();
+    });
+
+    this.els.btnCloseHall.addEventListener('click', () => {
+      audio.play('tap');
+      this.els.hallDialog.close();
+    });
+
+    // Hall of Fame Reset
+    this.els.btnResetHall.addEventListener('click', () => {
+      if (confirm('명예의 전당의 모든 기록을 삭제하시겠습니까?')) {
+        audio.play('erase');
+        HallOfFame.reset();
+        const activeTab = document.querySelector('.hall-tabs .tab-btn.active');
+        const activeDiff = activeTab ? activeTab.getAttribute('data-hall-tab') : 'easy';
+        this.renderHall(activeDiff);
+      }
+    });
+
+    // Hall of Fame Save Record
+    this.els.btnSaveRecord.addEventListener('click', () => {
+      audio.play('tap');
+      const name = this.els.playerNameInput.value.trim();
+      if (!name) {
+        alert('이름을 입력해주세요!');
+        return;
+      }
+      
+      HallOfFame.addRecord(this.difficulty, name, this.seconds);
+      this.els.hallEntrySection.classList.add('hidden');
+      this.els.victoryDialog.close();
+      this.openHall(this.difficulty);
+    });
+
+    // Hall of Fame Tabs click
+    const hallTabs = document.querySelectorAll('.hall-tabs .tab-btn');
+    hallTabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        audio.play('tap');
+        hallTabs.forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        const diff = e.currentTarget.getAttribute('data-hall-tab');
+        this.renderHall(diff);
+      });
+    });
   },
 
   // ==========================================================================
@@ -957,6 +1097,8 @@ const App = {
     this.els.board.innerHTML = '';
     this.els.difficultyBadge.textContent = this.getDifficultyLabel(difficulty);
     this.els.gameScreen.setAttribute('data-difficulty', difficulty);
+    
+    this.updateInGameRecords();
     
     this.mistakes = 0;
     this.seconds = 0;
@@ -1420,6 +1562,14 @@ const App = {
       this.els.victoryBestContainer.classList.add('hidden-best');
     }
 
+    // Check if qualified for Hall of Fame
+    if (HallOfFame.checkIsQualified(this.difficulty, this.seconds)) {
+      this.els.hallEntrySection.classList.remove('hidden');
+      this.els.playerNameInput.value = HallOfFame.getLastPlayerName();
+    } else {
+      this.els.hallEntrySection.classList.add('hidden');
+    }
+
     this.els.victoryDialog.showModal();
     this.startConfetti();
   },
@@ -1512,6 +1662,15 @@ const App = {
 
   updateTimerDisplay() {
     this.els.timerDigits.textContent = this.formatTime(this.seconds);
+    
+    // Ghost Pacer logic
+    const records = HallOfFame.getRecords()[this.difficulty] || [];
+    const firstPlace = records[0];
+    if (firstPlace && this.seconds > firstPlace.seconds) {
+      this.els.timerDigits.classList.add('behind-pace');
+    } else {
+      this.els.timerDigits.classList.remove('behind-pace');
+    }
   },
 
   formatTime(totalSeconds) {
@@ -1609,6 +1768,8 @@ const App = {
     this.els.gameScreen.setAttribute('data-difficulty', this.difficulty);
     this.els.mistakesVal.textContent = this.mistakes;
     
+    this.updateInGameRecords();
+    
     this.buildGridUI();
     this.buildKeypadUI();
     this.startTimer();
@@ -1616,6 +1777,128 @@ const App = {
 
   clearAutosave() {
     localStorage.removeItem('sudoku_autosave');
+  },
+
+  // ==========================================================================
+  // HALL OF FAME SHEET CONTROLLING
+  // ==========================================================================
+
+  openHall(difficulty = null) {
+    audio.play('tap');
+    
+    // Choose active tab: either the specified difficulty, the current game difficulty, or the active tab, defaulting to 'easy'
+    const targetDiff = difficulty || this.difficulty || 'easy';
+    
+    // Set active tab styling
+    const hallTabs = document.querySelectorAll('.hall-tabs .tab-btn');
+    hallTabs.forEach(btn => {
+      if (btn.getAttribute('data-hall-tab') === targetDiff) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    this.renderHall(targetDiff);
+    this.els.hallDialog.showModal();
+  },
+
+  renderHall(difficulty) {
+    const records = HallOfFame.getRecords()[difficulty] || [];
+    
+    // 1. Render podium (1st, 2nd, 3rd)
+    const podiumData = [
+      { rank: 1, nameId: 'podium-1-name', timeId: 'podium-1-time' },
+      { rank: 2, nameId: 'podium-2-name', timeId: 'podium-2-time' },
+      { rank: 3, nameId: 'podium-3-name', timeId: 'podium-3-time' }
+    ];
+
+    podiumData.forEach(p => {
+      const nameEl = document.getElementById(p.nameId);
+      const timeEl = document.getElementById(p.timeId);
+      
+      if (nameEl && timeEl) {
+        const record = records[p.rank - 1];
+        if (record) {
+          nameEl.textContent = record.name;
+          nameEl.classList.remove('empty-name');
+          timeEl.textContent = this.formatTime(record.seconds);
+        } else {
+          nameEl.textContent = '빈 기록';
+          nameEl.classList.add('empty-name');
+          timeEl.textContent = '--:--';
+        }
+      }
+    });
+
+    // 2. Render 4th to 10th place
+    const listEl = this.els.hallList;
+    if (listEl) {
+      listEl.innerHTML = '';
+      
+      if (records.length <= 3) {
+        // Show empty state if there are no ranks 4-10
+        const emptyRow = document.createElement('div');
+        emptyRow.className = 'hall-empty-state';
+        emptyRow.textContent = '도전하여 기록을 등록해보세요!';
+        listEl.appendChild(emptyRow);
+      } else {
+        for (let i = 3; i < records.length; i++) {
+          const record = records[i];
+          
+          const row = document.createElement('div');
+          row.className = 'hall-row';
+          
+          const rankNum = document.createElement('div');
+          rankNum.className = 'hall-rank-num';
+          rankNum.textContent = i + 1;
+          
+          const rowName = document.createElement('div');
+          rowName.className = 'hall-row-name';
+          rowName.textContent = record.name;
+          
+          const rowMeta = document.createElement('div');
+          rowMeta.className = 'hall-row-meta';
+          
+          const rowTime = document.createElement('span');
+          rowTime.className = 'hall-row-time';
+          rowTime.textContent = this.formatTime(record.seconds);
+          
+          const rowDate = document.createElement('span');
+          rowDate.className = 'hall-row-date';
+          rowDate.textContent = record.date;
+          
+          rowMeta.appendChild(rowTime);
+          rowMeta.appendChild(rowDate);
+          
+          row.appendChild(rankNum);
+          row.appendChild(rowName);
+          row.appendChild(rowMeta);
+          
+          listEl.appendChild(row);
+        }
+      }
+    }
+  },
+
+  updateInGameRecords() {
+    const records = HallOfFame.getRecords()[this.difficulty] || [];
+    const container = this.els.inGameRecords;
+    if (!container) return;
+
+    const goldTimeEl = container.querySelector('.gold .pacer-time');
+    const silverTimeEl = container.querySelector('.silver .pacer-time');
+    const bronzeTimeEl = container.querySelector('.bronze .pacer-time');
+
+    if (goldTimeEl) {
+      goldTimeEl.textContent = records[0] ? this.formatTime(records[0].seconds) : '--:--';
+    }
+    if (silverTimeEl) {
+      silverTimeEl.textContent = records[1] ? this.formatTime(records[1].seconds) : '--:--';
+    }
+    if (bronzeTimeEl) {
+      bronzeTimeEl.textContent = records[2] ? this.formatTime(records[2].seconds) : '--:--';
+    }
   },
 
   // ==========================================================================
