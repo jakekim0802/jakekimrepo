@@ -370,6 +370,7 @@ const App = {
     this.cacheElements();
     this.bindEvents();
     this.loadTheme();
+    this.applyThemeColors(); // Load custom board colors
     this.loadAutosave();
     this.updateSoundButtons();
   },
@@ -385,6 +386,7 @@ const App = {
     this.els.resumeTime = document.getElementById('resume-time');
     this.els.btnShowStats = document.getElementById('btn-show-stats');
     this.els.btnShowHelp = document.getElementById('btn-show-help');
+    this.els.btnShowSettings = document.getElementById('btn-show-settings');
     this.els.btnToggleGlobalTheme = document.getElementById('btn-toggle-global-theme');
     this.els.themeLbl = document.getElementById('theme-lbl');
     
@@ -402,6 +404,7 @@ const App = {
     this.els.keypadGrid = document.querySelector('.keypad-grid');
     this.els.btnToggleSound = document.getElementById('btn-toggle-sound');
     this.els.btnToggleTheme = document.getElementById('btn-toggle-theme');
+    this.els.btnShowGameSettings = document.getElementById('btn-show-game-settings');
 
     // Dialogs
     this.els.pauseDialog = document.getElementById('pause-dialog');
@@ -409,6 +412,7 @@ const App = {
     this.els.victoryDialog = document.getElementById('victory-dialog');
     this.els.statsDialog = document.getElementById('stats-dialog');
     this.els.helpDialog = document.getElementById('help-dialog');
+    this.els.settingsDialog = document.getElementById('settings-dialog');
     
     // Pause Dialog elements
     this.els.pauseDiffLbl = document.getElementById('pause-diff-lbl');
@@ -435,6 +439,13 @@ const App = {
     this.els.btnCloseHelp = document.getElementById('btn-close-help');
     this.els.btnPrevSlide = document.getElementById('btn-prev-slide');
     this.els.btnNextSlide = document.getElementById('btn-next-slide');
+
+    // Settings Dialog elements
+    this.els.btnCloseSettings = document.getElementById('btn-close-settings');
+    this.els.btnResetTheme = document.getElementById('btn-reset-theme');
+    this.els.pickerCellBg = document.getElementById('picker-cell-bg');
+    this.els.pickerOuterBorder = document.getElementById('picker-outer-border');
+    this.els.pickerInnerBorder = document.getElementById('picker-inner-border');
   },
 
   bindEvents() {
@@ -576,6 +587,27 @@ const App = {
     this.els.btnPrevSlide.addEventListener('click', () => this.navigateHelpSlide(-1));
     this.els.btnNextSlide.addEventListener('click', () => this.navigateHelpSlide(1));
 
+    // Settings Dialog events
+    this.els.btnShowSettings.addEventListener('click', () => {
+      audio.play('tap');
+      this.openSettings();
+    });
+
+    this.els.btnShowGameSettings.addEventListener('click', () => {
+      audio.play('tap');
+      this.openSettings();
+    });
+
+    this.els.btnCloseSettings.addEventListener('click', () => {
+      audio.play('tap');
+      this.els.settingsDialog.close();
+    });
+
+    this.els.btnResetTheme.addEventListener('click', () => {
+      audio.play('erase');
+      this.resetThemeColors();
+    });
+
     // Toast PWA Close button
     const btnCloseToast = document.getElementById('btn-close-toast');
     if (btnCloseToast) {
@@ -695,10 +727,10 @@ const App = {
         
         if (this.initialBoard[r][c] !== 0) {
           cell.classList.add('original');
-          cell.textContent = val;
+          cell.innerHTML = '<span class="cell-value">' + val + '</span>';
         } else if (val !== 0) {
           cell.classList.add('user-filled');
-          cell.textContent = val;
+          cell.innerHTML = '<span class="cell-value">' + val + '</span>';
         } else {
           // Empty cell: render a placeholder for notes
           const notesGrid = document.createElement('div');
@@ -825,7 +857,7 @@ const App = {
         audio.play('tap');
         this.currentBoard[r][c] = num;
         cellEl.className = 'cell user-filled highlight-select';
-        cellEl.textContent = num;
+        cellEl.innerHTML = '<span class="cell-value">' + num + '</span>';
         
         // Dynamic Polish: Automatic note clearing in same row, column, and block!
         this.autoClearPencilMarks(r, c, num);
@@ -930,7 +962,7 @@ const App = {
 
     const cellEl = this.getCellElement(r, c);
     cellEl.className = 'cell user-filled highlight-select';
-    cellEl.textContent = correctVal;
+    cellEl.innerHTML = '<span class="cell-value">' + correctVal + '</span>';
     
     this.autoClearPencilMarks(r, c, correctVal);
     this.updateKeypadBadges();
@@ -1410,6 +1442,124 @@ const App = {
     if (this.currentHelpSlide > 4) this.currentHelpSlide = 4;
     
     this.renderHelpSlide();
+  },
+
+  // ==========================================================================
+  // CUSTOM THEME SETTINGS MANAGEMENT
+  // ==========================================================================
+
+  openSettings() {
+    this.renderSettingsPickers();
+    this.els.settingsDialog.showModal();
+  },
+
+  renderSettingsPickers() {
+    // 10 beautiful highly legible dark cell backgrounds
+    const cellBgOptions = [
+      { name: '기본 투명', val: 'transparent' },
+      { name: '딥 인디고', val: '#1e1b4b' },
+      { name: '미드나잇', val: '#0f172a' },
+      { name: '딥 틸', val: '#062f4f' },
+      { name: '다크 에메랄드', val: '#064e3b' },
+      { name: '차콜 그레이', val: '#1f2937' },
+      { name: '와인 레드', val: '#4c0519' },
+      { name: '다크 퍼플', val: '#3b0764' },
+      { name: '초콜릿 브라운', val: '#2d1610' },
+      { name: '네이비 블랙', val: '#0a192f' }
+    ];
+
+    // 10 beautiful thick borders (outer borders)
+    const outerBorderOptions = [
+      { name: '기본 흰색', val: 'var(--text-primary)' },
+      { name: '글로잉 인디고', val: '#818cf8' },
+      { name: '스카이 블루', val: '#38bdf8' },
+      { name: '에메랄드', val: '#34d399' },
+      { name: '골든 옐로우', val: '#fbbf24' },
+      { name: '소프트 로즈', val: '#fb7185' },
+      { name: '슬레이트 실버', val: '#cbd5e1' },
+      { name: '글래스 플래티넘', val: '#e2e8f0' },
+      { name: '브라이트 코랄', val: '#f87171' },
+      { name: '오키드 라벤더', val: '#c084fc' }
+    ];
+
+    // 10 beautiful thin inner borders
+    const innerBorderOptions = [
+      { name: '기본 회색', val: 'var(--border-color)' },
+      { name: '글라스 화이트', val: 'rgba(255, 255, 255, 0.15)' },
+      { name: '인디고 그레이', val: 'rgba(129, 140, 248, 0.15)' },
+      { name: '민트 그린', val: 'rgba(52, 211, 153, 0.15)' },
+      { name: '스카이 틴트', val: 'rgba(56, 189, 248, 0.15)' },
+      { name: '앰버 틴트', val: 'rgba(251, 191, 36, 0.15)' },
+      { name: '로즈 틴트', val: 'rgba(251, 113, 133, 0.15)' },
+      { name: '다크 슬레이트', val: 'rgba(0, 0, 0, 0.35)' },
+      { name: '클린 블랙', val: 'rgba(0, 0, 0, 0.55)' },
+      { name: '브라이트 글래스', val: 'rgba(255, 255, 255, 0.28)' }
+    ];
+
+    const currentCellBg = localStorage.getItem('sudoku_cell_color') || 'transparent';
+    const currentOuterBorder = localStorage.getItem('sudoku_outer_color') || 'var(--text-primary)';
+    const currentInnerBorder = localStorage.getItem('sudoku_inner_color') || 'var(--border-color)';
+
+    // Render pickers helper
+    const buildPicker = (container, options, currentVal, storageKey, cssVar) => {
+      container.innerHTML = '';
+      options.forEach(opt => {
+        const circle = document.createElement('div');
+        circle.className = 'color-circle';
+        
+        // Handle visual background preview
+        if (opt.val === 'transparent') {
+          circle.style.background = 'repeating-linear-gradient(45deg, rgba(255,255,255,0.05), rgba(255,255,255,0.05) 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px)';
+          if (document.body.getAttribute('data-theme') === 'light') {
+            circle.style.background = 'repeating-linear-gradient(45deg, rgba(0,0,0,0.05), rgba(0,0,0,0.05) 5px, rgba(255,255,255,0.5) 5px, rgba(255,255,255,0.5) 10px)';
+          }
+        } else if (opt.val.startsWith('var(')) {
+          circle.style.backgroundColor = document.body.getAttribute('data-theme') === 'light' ? '#111827' : '#f3f4f6';
+        } else {
+          circle.style.backgroundColor = opt.val;
+        }
+
+        circle.setAttribute('title', opt.name);
+        
+        // Active visual checkmark
+        if (currentVal === opt.val) {
+          circle.classList.add('active');
+        }
+
+        circle.addEventListener('click', () => {
+          audio.play('tap');
+          localStorage.setItem(storageKey, opt.val);
+          document.documentElement.style.setProperty(cssVar, opt.val);
+          
+          // Re-render this group to update checkmark
+          buildPicker(container, options, opt.val, storageKey, cssVar);
+        });
+
+        container.appendChild(circle);
+      });
+    };
+
+    buildPicker(this.els.pickerCellBg, cellBgOptions, currentCellBg, 'sudoku_cell_color', '--board-cell-color');
+    buildPicker(this.els.pickerOuterBorder, outerBorderOptions, currentOuterBorder, 'sudoku_outer_color', '--board-outer-color');
+    buildPicker(this.els.pickerInnerBorder, innerBorderOptions, currentInnerBorder, 'sudoku_inner_color', '--board-inner-color');
+  },
+
+  applyThemeColors() {
+    const currentCellBg = localStorage.getItem('sudoku_cell_color') || 'transparent';
+    const currentOuterBorder = localStorage.getItem('sudoku_outer_color') || 'var(--text-primary)';
+    const currentInnerBorder = localStorage.getItem('sudoku_inner_color') || 'var(--border-color)';
+
+    document.documentElement.style.setProperty('--board-cell-color', currentCellBg);
+    document.documentElement.style.setProperty('--board-outer-color', currentOuterBorder);
+    document.documentElement.style.setProperty('--board-inner-color', currentInnerBorder);
+  },
+
+  resetThemeColors() {
+    localStorage.removeItem('sudoku_cell_color');
+    localStorage.removeItem('sudoku_outer_color');
+    localStorage.removeItem('sudoku_inner_color');
+    this.applyThemeColors();
+    this.els.settingsDialog.close();
   }
 };
 
